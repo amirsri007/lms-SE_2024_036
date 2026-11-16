@@ -1,5 +1,7 @@
 package lms.service;
 
+import lms.exception.ItemNotAvailableException;
+import lms.exception.MemberNotFoundException;
 import lms.model.Book;
 import lms.model.DVD;
 import lms.model.LibraryItem;
@@ -12,8 +14,8 @@ import java.util.Collections;
 import java.util.List;
 
 /**
- * Service managing library operations.
- * Coordinates lending and reservations via interface contracts and provides member ranking via Comparable.
+ * Service orchestrating library operations and transactional workflows.
+ * Implements robust domain exception handling for lookups, loans, and returns.
  */
 public class Library {
     private final List<LibraryItem> items = new ArrayList<>();
@@ -23,7 +25,6 @@ public class Library {
         if (item == null) {
             throw new IllegalArgumentException("Library item cannot be null");
         }
-        System.out.println("[Static Binding] addItem(LibraryItem) called for: " + item.getTitle());
         items.add(item);
     }
 
@@ -31,7 +32,6 @@ public class Library {
         if (book == null) {
             throw new IllegalArgumentException("Book cannot be null");
         }
-        System.out.println("[Static Binding] addItem(Book) called for: " + book.getTitle());
         items.add(book);
     }
 
@@ -39,7 +39,6 @@ public class Library {
         if (dvd == null) {
             throw new IllegalArgumentException("DVD cannot be null");
         }
-        System.out.println("[Static Binding] addItem(DVD) called for: " + dvd.getTitle());
         items.add(dvd);
     }
 
@@ -51,24 +50,82 @@ public class Library {
     }
 
     /**
+     * Looks up a member by memberId.
+     * Throws unchecked MemberNotFoundException when ID is not present.
+     *
+     * @param memberId Target member identifier
+     * @return Found Member instance
+     */
+    public Member findMember(String memberId) {
+        if (memberId == null || memberId.isBlank()) {
+            throw new IllegalArgumentException("Member ID cannot be blank");
+        }
+        for (Member m : members) {
+            if (m.getMemberId().equalsIgnoreCase(memberId)) {
+                return m;
+            }
+        }
+        throw new MemberNotFoundException(memberId);
+    }
+
+    /**
+     * Looks up a library item by itemId.
+     * Throws checked ItemNotAvailableException when item ID is not present.
+     *
+     * @param itemId Target item identifier
+     * @return Found LibraryItem instance
+     * @throws ItemNotAvailableException if no item matches the given itemId
+     */
+    public LibraryItem findItem(String itemId) throws ItemNotAvailableException {
+        if (itemId == null || itemId.isBlank()) {
+            throw new IllegalArgumentException("Item ID cannot be blank");
+        }
+        for (LibraryItem item : items) {
+            if (item.getId().equalsIgnoreCase(itemId)) {
+                return item;
+            }
+        }
+        throw new ItemNotAvailableException("No item with id '" + itemId + "'");
+    }
+
+    /**
+     * Executes a borrowing transaction between an item and a member.
+     *
+     * @param itemId   Identifier of item to borrow
+     * @param memberId Identifier of borrower
+     * @throws ItemNotAvailableException if item does not exist, is on loan, or borrow limit is reached
+     */
+    public void borrowItem(String itemId, String memberId) throws ItemNotAvailableException {
+        Member member = findMember(memberId);
+        LibraryItem item = findItem(itemId);
+        lend(item, member);
+    }
+
+    /**
+     * Processes the return of an item and frees the borrower's borrowing quota.
+     *
+     * @param itemId Identifier of item being returned
+     * @throws ItemNotAvailableException if item does not exist or is not currently on loan
+     */
+    public void returnItem(String itemId) throws ItemNotAvailableException {
+        LibraryItem item = findItem(itemId);
+        item.returnItem();
+    }
+
+    /**
      * Delegates borrowing to the Loanable contract interface.
      *
-     * @param thing  Any entity implementing Loanable
-     * @param member The borrowing member
+     * @param thing  Item implementing Loanable
+     * @param member Paton borrowing the item
+     * @throws ItemNotAvailableException if loan cannot be completed
      */
-    public void lend(Loanable thing, Member member) {
+    public void lend(Loanable thing, Member member) throws ItemNotAvailableException {
         if (thing == null) {
             throw new IllegalArgumentException("Loanable item cannot be null");
         }
         thing.loan(member);
     }
 
-    /**
-     * Attempts to reserve an item using interface pattern-matching.
-     *
-     * @param item   The item to reserve
-     * @param member The reserving member
-     */
     public void reserveIfPossible(LibraryItem item, Member member) {
         if (item instanceof Reservable reservable) {
             reservable.reserve(member);
@@ -77,9 +134,6 @@ public class Library {
         }
     }
 
-    /**
-     * Copies the internal member list and sorts by activity without mutating the original list order.
-     */
     public void printMembersByActivity() {
         System.out.println("\n--- Member Rankings by Borrowing Activity (Descending) ---");
         List<Member> sortedMembers = new ArrayList<>(members);
@@ -88,7 +142,7 @@ public class Library {
         int rank = 1;
         for (Member m : sortedMembers) {
             System.out.printf("Rank %d: %s (%s) - Borrowed Items: %d (Limit: %d)%n",
-                    rank++, m.getName(), m.getId(), m.getBorrowedCount(), m.getMaxBorrowLimit());
+                    rank++, m.getName(), m.getMemberId(), m.getBorrowedCount(), m.getMaxBorrowLimit());
         }
     }
 
