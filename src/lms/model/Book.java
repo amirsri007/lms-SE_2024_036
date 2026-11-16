@@ -1,39 +1,15 @@
 package lms.model;
 
 /**
- * Domain entity representing a book in the Library Management System.
- * Adheres to strict encapsulation principles with validated mutators.
+ * Concrete domain entity representing a Book.
+ * Inherits common library item attributes from LibraryItem.
  */
-public class Book {
-    private String title;
+public class Book extends LibraryItem {
     private String author;
-    private String isbn;
-    private boolean isBorrowed;
 
-    /**
-     * Constructs a new Book instance.
-     * Invokes validated setters to prevent bypassing domain constraints during instantiation.
-     *
-     * @param title  Book title
-     * @param author Book author
-     * @param isbn   International Standard Book Number
-     */
-    public Book(String title, String author, String isbn) {
-        setTitle(title);
+    public Book(String id, String title, String author) {
+        super(id, title);
         setAuthor(author);
-        setIsbn(isbn);
-        this.isBorrowed = false;
-    }
-
-    public String getTitle() {
-        return title;
-    }
-
-    public void setTitle(String title) {
-        if (title == null || title.isBlank()) {
-            throw new IllegalArgumentException("Title cannot be blank");
-        }
-        this.title = title;
     }
 
     public String getAuthor() {
@@ -47,27 +23,8 @@ public class Book {
         this.author = author;
     }
 
-    public String getIsbn() {
-        return isbn;
-    }
-
-    public void setIsbn(String isbn) {
-        if (isbn == null || isbn.isBlank()) {
-            throw new IllegalArgumentException("ISBN cannot be blank");
-        }
-        this.isbn = isbn;
-    }
-
-    public boolean isBorrowed() {
-        return isBorrowed;
-    }
-
-    public void setBorrowed(boolean borrowed) {
-        this.isBorrowed = borrowed;
-    }
-
     @Override
     public String toString() {
-        return "Book{title='" + title + "', author='" + author + "', isbn='" + isbn + "', borrowed=" + isBorrowed + "}";
+        return getClass().getSimpleName() + "{id='" + getId() + "', title='" + getTitle() + "', author='" + author + "', borrowed=" + isBorrowed() + "}";
     }
 }
