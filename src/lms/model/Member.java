@@ -1,25 +1,24 @@
 package lms.model;
 
 /**
- * Domain entity representing a library member.
- * Demonstrates state encapsulation and controlled mutator access.
+ * Superclass representing library members.
+ * Encapsulates member identification, borrow tracking, and borrow limit quotas.
  */
 public class Member {
     private String memberId;
     private String name;
     private int borrowedCount;
+    private int maxBorrowLimit;
 
-    /**
-     * Constructs a Member instance.
-     * Validates input invariants through setter methods.
-     *
-     * @param memberId Unique member identifier
-     * @param name     Full name of member
-     */
-    public Member(String memberId, String name) {
+    public Member(String memberId, String name, int maxBorrowLimit) {
         setMemberId(memberId);
         setName(name);
+        setMaxBorrowLimit(maxBorrowLimit);
         setBorrowedCount(0);
+    }
+
+    public Member(String memberId, String name) {
+        this(memberId, name, 5);
     }
 
     public String getMemberId() {
@@ -55,16 +54,23 @@ public class Member {
         this.borrowedCount = borrowedCount;
     }
 
-    /**
-     * Increments the count of currently borrowed items by 1.
-     * Delegates to setBorrowedCount to preserve validation invariants.
-     */
+    public int getMaxBorrowLimit() {
+        return maxBorrowLimit;
+    }
+
+    public void setMaxBorrowLimit(int maxBorrowLimit) {
+        if (maxBorrowLimit <= 0) {
+            throw new IllegalArgumentException("Max borrow limit must be greater than zero");
+        }
+        this.maxBorrowLimit = maxBorrowLimit;
+    }
+
     public void incrementBorrowedCount() {
         setBorrowedCount(this.borrowedCount + 1);
     }
 
     @Override
     public String toString() {
-        return "Member{id='" + memberId + "', name='" + name + "', borrowedCount=" + borrowedCount + "}";
+        return getClass().getSimpleName() + "{id='" + memberId + "', name='" + name + "', borrowedCount=" + borrowedCount + ", maxLimit=" + maxBorrowLimit + "}";
     }
 }
