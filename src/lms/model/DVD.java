@@ -2,7 +2,7 @@ package lms.model;
 
 /**
  * Concrete domain entity representing a Digital Versatile Disc (DVD).
- * Overrides calculateLateFee to implement polymorphic fee structures.
+ * Inherits from abstract LibraryItem; does not implement Reservable.
  */
 public class DVD extends LibraryItem {
     private int durationMinutes;
@@ -23,13 +23,6 @@ public class DVD extends LibraryItem {
         this.durationMinutes = durationMinutes;
     }
 
-    /**
-     * Overrides calculateLateFee to charge DVD premium late rate (25.0 per day).
-     * Demonstrates dynamic method overriding.
-     *
-     * @param daysLate Number of days past due date
-     * @return Computed late fee for DVD
-     */
     @Override
     public double calculateLateFee(int daysLate) {
         if (daysLate < 0) {
