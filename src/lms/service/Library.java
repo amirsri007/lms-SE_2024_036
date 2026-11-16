@@ -3,21 +3,21 @@ package lms.service;
 import lms.model.Book;
 import lms.model.DVD;
 import lms.model.LibraryItem;
+import lms.model.Loanable;
 import lms.model.Member;
+import lms.model.Reservable;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
 /**
- * Service managing polymorphic items and members.
- * Demonstrates static binding through method overloading and dynamic binding through polymorphic method invocation.
+ * Service managing library operations.
+ * Coordinates lending and reservations via interface contracts and provides member ranking via Comparable.
  */
 public class Library {
     private final List<LibraryItem> items = new ArrayList<>();
     private final List<Member> members = new ArrayList<>();
-
-    // --- Static Binding Demonstration (Overloaded Methods) ---
 
     public void addItem(LibraryItem item) {
         if (item == null) {
@@ -51,12 +51,47 @@ public class Library {
     }
 
     /**
-     * Demonstrates dynamic binding.
-     * Iterates through all items invoking calculateLateFee without any conditional branching or type checks.
-     * Runtime method dispatch resolves the actual overriding implementation (e.g., DVD vs Book).
+     * Delegates borrowing to the Loanable contract interface.
      *
-     * @param daysLate Number of overdue days
+     * @param thing  Any entity implementing Loanable
+     * @param member The borrowing member
      */
+    public void lend(Loanable thing, Member member) {
+        if (thing == null) {
+            throw new IllegalArgumentException("Loanable item cannot be null");
+        }
+        thing.loan(member);
+    }
+
+    /**
+     * Attempts to reserve an item using interface pattern-matching.
+     *
+     * @param item   The item to reserve
+     * @param member The reserving member
+     */
+    public void reserveIfPossible(LibraryItem item, Member member) {
+        if (item instanceof Reservable reservable) {
+            reservable.reserve(member);
+        } else {
+            System.out.println("[Refusal] Item '" + item.getTitle() + "' is not reservable (only Books support reservations).");
+        }
+    }
+
+    /**
+     * Copies the internal member list and sorts by activity without mutating the original list order.
+     */
+    public void printMembersByActivity() {
+        System.out.println("\n--- Member Rankings by Borrowing Activity (Descending) ---");
+        List<Member> sortedMembers = new ArrayList<>(members);
+        Collections.sort(sortedMembers);
+
+        int rank = 1;
+        for (Member m : sortedMembers) {
+            System.out.printf("Rank %d: %s (%s) - Borrowed Items: %d (Limit: %d)%n",
+                    rank++, m.getName(), m.getId(), m.getBorrowedCount(), m.getMaxBorrowLimit());
+        }
+    }
+
     public void printAllLateFees(int daysLate) {
         System.out.println("\n--- Polymorphic Late Fee Calculation (" + daysLate + " days late) ---");
         for (LibraryItem item : items) {
@@ -65,14 +100,9 @@ public class Library {
         }
     }
 
-    /**
-     * Demonstrates safe downcasting with pattern matching instanceof.
-     *
-     * @param item The library item to inspect for streaming capability
-     */
     public void streamIfPossible(LibraryItem item) {
         if (item instanceof DVD dvd) {
-            System.out.println("Streaming DVD '" + dvd.getTitle() + "' (Duration: " + dvd.getDurationMinutes() + " mins)... Enjoy the movie!");
+            System.out.println("Streaming DVD '" + dvd.getTitle() + "' (Duration: " + dvd.getDurationMinutes() + " mins)...");
         } else {
             System.out.println("Item '" + item.getTitle() + "' is not streamable: only DVDs can be streamed.");
         }
