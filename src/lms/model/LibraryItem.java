@@ -1,10 +1,10 @@
 package lms.model;
 
 /**
- * Superclass representing common attributes and behaviors of all library items.
- * Demonstrates state abstraction and provides base polymorphic methods.
+ * Abstract base class for library inventory items, enforcing Loanable contract.
+ * Centralizes borrowing state logic while mandating concrete implementations of calculateLateFee.
  */
-public class LibraryItem {
+public abstract class LibraryItem implements Loanable {
     private String id;
     private String title;
     private boolean isBorrowed;
@@ -46,17 +46,41 @@ public class LibraryItem {
     }
 
     /**
-     * Calculates late fee based on days overdue.
-     * Default base implementation charges 10.0 per day late.
+     * Abstract method enforcing item-specific late fee calculation rules.
      *
-     * @param daysLate Number of days past the due date
-     * @return Computed late fee
+     * @param daysLate Number of days past due date
+     * @return Computed overdue fee
      */
-    public double calculateLateFee(int daysLate) {
-        if (daysLate < 0) {
-            throw new IllegalArgumentException("Days late cannot be negative");
+    public abstract double calculateLateFee(int daysLate);
+
+    @Override
+    public void loan(Member member) {
+        if (member == null) {
+            throw new IllegalArgumentException("Borrowing member cannot be null");
         }
-        return daysLate * 10.0;
+        if (isBorrowed) {
+            System.out.println("[Refusal] '" + title + "' is already on loan.");
+            return;
+        }
+        if (member.getBorrowedCount() >= member.getMaxBorrowLimit()) {
+            System.out.println("[Refusal] Member '" + member.getName() + "' has reached the limit of " + member.getMaxBorrowLimit() + " items.");
+            return;
+        }
+
+        this.isBorrowed = true;
+        member.incrementBorrowedCount();
+        System.out.println("[Loan Confirmed] '" + title + "' loaned to " + member.getName() + ".");
+    }
+
+    @Override
+    public void returnItem() {
+        if (!isBorrowed) {
+            System.out.println("[Refusal] '" + title + "' is not on loan.");
+            return;
+        }
+
+        this.isBorrowed = false;
+        System.out.println("[Return Confirmed] '" + title + "' has been successfully returned.");
     }
 
     @Override

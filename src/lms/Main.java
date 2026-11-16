@@ -2,50 +2,64 @@ package lms;
 
 import lms.model.Book;
 import lms.model.DVD;
-import lms.model.LibraryItem;
+import lms.model.Magazine;
 import lms.model.Staff;
 import lms.model.Student;
 import lms.service.Library;
 
 /**
- * Phase 2 Entry Point: Demonstrates inheritance hierarchies, static vs dynamic binding,
- * and safe downcasting using pattern-matching instanceof.
+ * Phase 3 Entry Point: Demonstrates abstract classes, interface contracts (Loanable, Reservable),
+ * and Comparable member activity sorting.
  */
 public class Main {
     public static void main(String[] args) {
-        System.out.println("=== Phase 2: Inheritance & Polymorphism ===");
+        System.out.println("=== Phase 3: Abstract Classes & Interfaces ===");
 
         Library library = new Library();
 
-        // 1. Static Binding Demonstration (Overloaded Methods)
-        System.out.println("\n--- Demonstrating Static Binding (Overloaded addItem) ---");
-        Book book = new Book("B001", "Clean Code", "Robert C. Martin");
-        DVD dvd = new DVD("D001", "Inception", 148);
-        LibraryItem genericItem = new Book("B002", "Effective Java", "Joshua Bloch");
+        // 1. Populate Catalog (Book, DVD, Magazine)
+        Book book1 = new Book("B001", "Clean Code", "Robert C. Martin");
+        Book book2 = new Book("B002", "Effective Java", "Joshua Bloch");
+        DVD dvd1 = new DVD("D001", "Inception", 148);
+        Magazine mag1 = new Magazine("M101", "IEEE Software", 42);
 
-        // Static binding resolves at compile time based on the declared reference type:
-        library.addItem(book);        // Calls addItem(Book)
-        library.addItem(dvd);         // Calls addItem(DVD)
-        library.addItem(genericItem); // Calls addItem(LibraryItem) despite runtime type being Book
+        library.addItem(book1);
+        library.addItem(book2);
+        library.addItem(dvd1);
+        library.addItem(mag1);
 
-        // 2. Member Hierarchy
-        System.out.println("\n--- Registering Members (Student & Staff) ---");
-        Student student = new Student("S101", "Kasun Perera");
-        Staff staff = new Staff("E201", "Dr. Kamal Gunasekara");
+        // 2. Populate Members (Student & Staff)
+        Student student = new Student("S101", "Kasun Perera");        // Max limit 3
+        Staff staff = new Staff("E201", "Dr. Kamal Gunasekara");     // Max limit 10
 
         library.addMember(student);
         library.addMember(staff);
 
-        library.listItems();
-        library.listMembers();
+        // 3. Polymorphic Late Fees (Book $10, DVD $25, Magazine $5)
+        library.printAllLateFees(3);
 
-        // 3. Dynamic Binding Demonstration (Polymorphic Method Dispatch)
-        // Late fee calculation: Book = $10.0/day, DVD = $25.0/day
-        library.printAllLateFees(4);
+        // 4. Interface Demonstration: Loanable (lend)
+        System.out.println("\n--- Testing Loanable Contract (lend) ---");
+        library.lend(book1, student); // Loan 1
+        library.lend(dvd1, student);  // Loan 2
+        library.lend(mag1, student);  // Loan 3 (student reaches limit)
 
-        // 4. Safe Pattern Matching Downcasting
-        System.out.println("\n--- Demonstrating Safe Pattern Matching (streamIfPossible) ---");
-        library.streamIfPossible(dvd);
-        library.streamIfPossible(book);
+        Book book3 = new Book("B003", "Refactoring", "Martin Fowler");
+        library.addItem(book3);
+        library.lend(book3, student); // Refused: limit reached
+
+        // Attempt to borrow already loaned item
+        library.lend(book1, staff);   // Refused: already borrowed
+
+        // 5. Interface Demonstration: Reservable (reserveIfPossible)
+        System.out.println("\n--- Testing Reservable Contract (reserveIfPossible) ---");
+        library.reserveIfPossible(book3, student); // Book is Reservable
+        library.reserveIfPossible(dvd1, staff);    // DVD is not Reservable
+        library.reserveIfPossible(mag1, staff);    // Magazine is not Reservable
+
+        // 6. Comparable Sorting: Member Activity
+        // Staff borrows book3
+        library.lend(book3, staff);
+        library.printMembersByActivity();
     }
 }
