@@ -1,18 +1,22 @@
 package lms.model;
 
+import lms.exception.ItemNotAvailableException;
+
 /**
- * Abstract base class for library inventory items, enforcing Loanable contract.
- * Centralizes borrowing state logic while mandating concrete implementations of calculateLateFee.
+ * Abstract superclass representing library catalog items.
+ * Implements Loanable, enforcing checked exceptions on loan/return and tracking active borrower.
  */
 public abstract class LibraryItem implements Loanable {
     private String id;
     private String title;
     private boolean isBorrowed;
+    private Member borrower;
 
     public LibraryItem(String id, String title) {
         setId(id);
         setTitle(title);
         this.isBorrowed = false;
+        this.borrower = null;
     }
 
     public String getId() {
@@ -45,46 +49,47 @@ public abstract class LibraryItem implements Loanable {
         this.isBorrowed = borrowed;
     }
 
-    /**
-     * Abstract method enforcing item-specific late fee calculation rules.
-     *
-     * @param daysLate Number of days past due date
-     * @return Computed overdue fee
-     */
+    public Member getBorrower() {
+        return borrower;
+    }
+
     public abstract double calculateLateFee(int daysLate);
 
     @Override
-    public void loan(Member member) {
+    public void loan(Member member) throws ItemNotAvailableException {
         if (member == null) {
             throw new IllegalArgumentException("Borrowing member cannot be null");
         }
         if (isBorrowed) {
-            System.out.println("[Refusal] '" + title + "' is already on loan.");
-            return;
+            throw new ItemNotAvailableException(title + " is already on loan.");
         }
         if (member.getBorrowedCount() >= member.getMaxBorrowLimit()) {
-            System.out.println("[Refusal] Member '" + member.getName() + "' has reached the limit of " + member.getMaxBorrowLimit() + " items.");
-            return;
+            throw new ItemNotAvailableException(member.getName() + " has reached the limit of " + member.getMaxBorrowLimit() + " items.");
         }
 
         this.isBorrowed = true;
+        this.borrower = member;
         member.incrementBorrowedCount();
         System.out.println("[Loan Confirmed] '" + title + "' loaned to " + member.getName() + ".");
     }
 
     @Override
-    public void returnItem() {
+    public void returnItem() throws ItemNotAvailableException {
         if (!isBorrowed) {
-            System.out.println("[Refusal] '" + title + "' is not on loan.");
-            return;
+            throw new ItemNotAvailableException(title + " is not on loan.");
         }
 
+        if (this.borrower != null) {
+            this.borrower.decrementBorrowedCount();
+            this.borrower = null;
+        }
         this.isBorrowed = false;
         System.out.println("[Return Confirmed] '" + title + "' has been successfully returned.");
     }
 
     @Override
     public String toString() {
-        return getClass().getSimpleName() + "{id='" + id + "', title='" + title + "', borrowed=" + isBorrowed + "}";
+        String borrowerInfo = isBorrowed && borrower != null ? "borrower='" + borrower.getName() + "'" : "borrowed=false";
+        return getClass().getSimpleName() + "{id='" + id + "', title='" + title + "', " + borrowerInfo + "}";
     }
 }

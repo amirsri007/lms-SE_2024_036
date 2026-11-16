@@ -1,8 +1,8 @@
 package lms.model;
 
 /**
- * Superclass representing library members.
- * Implements Comparable to sort members based on borrowing activity in descending order.
+ * Domain entity representing a library member.
+ * Tracks borrowing activity, enforcing borrow quotas and providing decrement logic.
  */
 public class Member implements Comparable<Member> {
     private String memberId;
@@ -74,11 +74,16 @@ public class Member implements Comparable<Member> {
     }
 
     /**
-     * Compares two members by borrowedCount descending (most active members first).
-     *
-     * @param other The other member to compare against
-     * @return Negative if this > other, positive if this < other, 0 if equal
+     * Decrements the member's active borrow count by 1.
+     * Restores the member's borrowing quota upon item return.
      */
+    public void decrementBorrowedCount() {
+        if (this.borrowedCount <= 0) {
+            throw new IllegalArgumentException("Borrowed count cannot be decremented below zero");
+        }
+        setBorrowedCount(this.borrowedCount - 1);
+    }
+
     @Override
     public int compareTo(Member other) {
         if (other == null) {
